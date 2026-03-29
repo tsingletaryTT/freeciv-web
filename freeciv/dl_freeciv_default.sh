@@ -19,9 +19,14 @@ rm -Rf freeciv
 
 if test "$GIT_PATCHING" = "yes" ; then
 
-  # Fetch one commit from freeciv
-  git clone --no-tags --branch=main --single-branch https://github.com/freeciv/freeciv.git freeciv
-  ( cd freeciv && git checkout $1 )
+  # TT-Lang: clone the TT-Lang patched Freeciv server (ttlang branch) instead
+  # of vanilla freeciv/freeciv.  The ttlang branch is based on the same
+  # add9f4e14 base commit as version.txt specifies, with three TT-Lang commits
+  # on top (terrain gen, tile scoring, coastal fish filter).  All standard
+  # freeciv-web patches in apply_patches.sh apply cleanly on top.
+  git clone --no-tags --branch=ttlang --single-branch \
+      https://github.com/tsingletaryTT/freeciv.git freeciv
+  echo "TT-Lang: checked out $(git -C freeciv rev-parse --short HEAD) (ttlang branch)"
 
 else
 
@@ -29,15 +34,15 @@ else
   # The download step saves having to merge in Freeciv's history each time the
   # Freeciv server revision is updated.
   echo "  fetching missing revisions"
-  git cat-file -e $1 || git fetch --no-tags --depth=1 https://github.com/freeciv/freeciv.git $1:freeciv || /bin/true
+  git cat-file -e $1 || git fetch --no-tags --depth=1 https://github.com/tsingletaryTT/freeciv.git ttlang:freeciv-ref || /bin/true
 
   # Place the requested Freeciv revision in the freeciv/freeciv folder.
   # The checkout isn't owned by git. This means that the patches automatically
   # applied during the build won't accidentally end up in commits. It also
   # means that committing unrelated changes won't accidentally revert the
   # Freeciv server revision because a command didn't run.
-  echo "  checking out commit $1"
-  git read-tree --prefix=freeciv/freeciv/ --index-output=.freeciv_index $1
+  echo "  checking out TT-Lang ttlang branch HEAD"
+  git read-tree --prefix=freeciv/freeciv/ --index-output=.freeciv_index freeciv-ref
   mkdir freeciv && cd freeciv && GIT_INDEX_FILE=.freeciv_index git checkout-index -af && cd ..
   rm -f ../.freeciv_index
 
