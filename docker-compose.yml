@@ -8,6 +8,7 @@ services:
     command: ["sleep", "infinity"]
     volumes:
       - "data:/var/lib/tomcat10/webapps/data"
+      - "/tmp:/tmp"   # TT-Lang: share host /tmp/ttlang_freeciv.sock with container
     ports:
       - "8080:80"
       - "4002:4002"
