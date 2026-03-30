@@ -17,33 +17,21 @@ echo "Updating freeciv to commit $1, git patching: $GIT_PATCHING"
 echo "  removing existing source"
 rm -Rf freeciv
 
-if test "$GIT_PATCHING" = "yes" ; then
-
-  # TT-Lang: clone the TT-Lang patched Freeciv server (ttlang branch) instead
-  # of vanilla freeciv/freeciv.  The ttlang branch is based on the same
-  # add9f4e14 base commit as version.txt specifies, with three TT-Lang commits
-  # on top (terrain gen, tile scoring, coastal fish filter).  All standard
-  # freeciv-web patches in apply_patches.sh apply cleanly on top.
-  git clone --no-tags --branch=ttlang --single-branch \
-      https://github.com/tsingletaryTT/freeciv.git freeciv
-  echo "TT-Lang: checked out $(git -C freeciv rev-parse --short HEAD) (ttlang branch)"
-
-else
-
-  # Download the wanted Freeciv revision from GitHub unless it is here already.
-  # The download step saves having to merge in Freeciv's history each time the
-  # Freeciv server revision is updated.
-  echo "  fetching missing revisions"
-  git cat-file -e $1 || git fetch --no-tags --depth=1 https://github.com/tsingletaryTT/freeciv.git ttlang:freeciv-ref || /bin/true
-
-  # Place the requested Freeciv revision in the freeciv/freeciv folder.
-  # The checkout isn't owned by git. This means that the patches automatically
-  # applied during the build won't accidentally end up in commits. It also
-  # means that committing unrelated changes won't accidentally revert the
-  # Freeciv server revision because a command didn't run.
-  echo "  checking out TT-Lang ttlang branch HEAD"
-  git read-tree --prefix=freeciv/freeciv/ --index-output=.freeciv_index freeciv-ref
-  mkdir freeciv && cd freeciv && GIT_INDEX_FILE=.freeciv_index git checkout-index -af && cd ..
-  rm -f ../.freeciv_index
-
+# TT-Lang: always clone the TT-Lang patched Freeciv server (ttlang branch).
+# The ttlang branch is based on the same add9f4e14 base commit as version.txt
+# specifies, with TT-Lang commits on top (terrain gen, tile scoring, coastal
+# fish filter, tt_tile_cache + ttlang_height sources).  All standard
+# freeciv-web patches in apply_patches.sh apply cleanly on top.
+#
+# GIT_PATCHING="no" means the checkout should not be a live git repo (so
+# patches don't accidentally end up in commits).  We clone and then remove
+# .git to satisfy this contract while still getting the right source tree.
+echo "TT-Lang: cloning tsingletaryTT/freeciv (ttlang branch)..."
+git clone --no-tags --branch=ttlang --single-branch \
+    https://github.com/tsingletaryTT/freeciv.git freeciv
+echo "TT-Lang: checked out $(git -C freeciv rev-parse --short HEAD) (ttlang branch)"
+if test "$GIT_PATCHING" = "no" ; then
+  # Remove .git so the checkout behaves like the original no-patching mode:
+  # patches won't accidentally become commits and history won't be dragged in.
+  rm -rf freeciv/.git
 fi
